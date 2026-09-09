@@ -16,6 +16,10 @@ app.use(
 app.use(express.json());
 const authRoutes = require("./routes/authRoutes");
 app.use("/api/auth", authRoutes);
+const inventoryRoute = require("./routes/inventoryRoute");
+app.use("/api/inventory", inventoryRoute)
+const orderRoutes = require("./routes/orderRoutes");
+app.use("/api/orders", orderRoutes);;
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({
