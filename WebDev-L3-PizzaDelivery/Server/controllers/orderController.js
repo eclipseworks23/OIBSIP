@@ -171,4 +171,64 @@ async function verifyPayment(req, res) {
     res.status(500).json({ message: "Server error verifying payment" });
   }
 }
-  module.exports = { createOrder, createPaymentOrder, verifyPayment };
+// Customer: get their own orders, most recent first
+async function getMyOrders(req, res) {
+  try {
+    const orders = await Order.find({ user: req.user._id })
+      .sort({ createdAt: -1 })
+      .populate("base sauce cheese vegetables", "name category price");
+
+    res.status(200).json(orders);
+  } catch (error) {
+    console.error("Get my orders error:", error.message);
+    res.status(500).json({ message: "Server error fetching orders" });
+  }
+}
+
+// Admin only: get all orders, most recent first
+async function getAllOrders(req, res) {
+  try {
+    const orders = await Order.find()
+      .sort({ createdAt: -1 })
+      .populate("user", "name email")
+      .populate("base sauce cheese vegetables", "name category price");
+
+    res.status(200).json(orders);
+  } catch (error) {
+    console.error("Get all orders error:", error.message);
+    res.status(500).json({ message: "Server error fetching orders" });
+  }
+}
+
+// Admin only: update an order's status
+async function updateOrderStatus(req, res) {
+  try {
+    const { id } = req.params;
+    const { orderStatus } = req.body;
+
+    const validStatuses = ["Order Received", "In Kitchen", "Sent to Delivery"];
+
+    if (!validStatuses.includes(orderStatus)) {
+      return res.status(400).json({ message: "Invalid order status" });
+    }
+
+    const order = await Order.findById(id);
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    if (order.paymentStatus !== "paid") {
+      return res.status(400).json({ message: "Cannot update status of an unpaid order" });
+    }
+
+    order.orderStatus = orderStatus;
+    await order.save();
+
+    res.status(200).json({ message: "Order status updated", order });
+  } catch (error) {
+    console.error("Update order status error:", error.message);
+    res.status(500).json({ message: "Server error updating order status" });
+  }
+}
+  module.exports = { createOrder, createPaymentOrder, verifyPayment, getMyOrders, getAllOrders, updateOrderStatus };
